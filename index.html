@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Infinite Canvas Links</title>
   <style>
     :root{
@@ -27,6 +27,7 @@
       user-select:none;
       -webkit-tap-highlight-color:transparent;
       touch-action:none;
+      overscroll-behavior:none;
     }
 
     body::before{
@@ -85,6 +86,7 @@
       animation-delay:var(--delay, 0ms);
       cursor:grab;
       touch-action:none;
+      overscroll-behavior:none;
       -webkit-user-drag:none;
     }
 
@@ -112,7 +114,36 @@
       -webkit-backdrop-filter:blur(10px);
       color:var(--text);
       display:block;
-      overflow:hidden;
+      overflow:auto;
+      -webkit-overflow-scrolling:touch;
+      scrollbar-width:thin;
+      overscroll-behavior:contain;
+      max-height:min(72vh, 460px);
+    }
+
+    .card::-webkit-scrollbar{
+      width:6px;
+      height:6px;
+    }
+
+    .card::-webkit-scrollbar-thumb{
+      background:rgba(255,255,255,.22);
+      border-radius:999px;
+    }
+
+    .card::-webkit-scrollbar-track{
+      background:transparent;
+    }
+
+    .card p{
+      margin:0 0 8px;
+      line-height:1.45;
+      word-break:break-word;
+    }
+
+    .card span p{
+      font-size:.86rem;
+      color:var(--muted);
     }
 
     .card::before{
@@ -250,6 +281,7 @@
       backdrop-filter:blur(12px);
       -webkit-backdrop-filter:blur(12px);
       box-shadow:0 0 24px rgba(255,255,255,.08);
+      max-height:min(78vh, 720px);
     }
 
     .hud h2{
@@ -460,11 +492,107 @@
       100%{ transform:translate(-50%, -50%) translate(var(--dx), var(--dy)) scale(.15); opacity:0; }
     }
 
-    @media (max-width:640px){
-      .hero{ min-width:min(88vw, 340px); padding:22px 18px 18px; }
-      .card{ min-width:190px; padding:16px 16px 14px; }
-      .hint{ bottom:12px; font-size:.75rem; }
-      .hud{ width:min(280px, calc(100vw - 20px)); left:10px; top:10px; padding:12px; }
+    @media (max-width: 1024px){
+      .hero{
+        min-width:min(88vw, 380px);
+      }
+
+      .card{
+        min-width:min(72vw, 320px);
+        max-width:min(72vw, 340px);
+      }
+
+      .hud{
+        width:min(360px, calc(100vw - 24px));
+        left:12px;
+        top:12px;
+        padding:12px;
+      }
+
+      .hud-list{
+        max-height:min(52vh, 520px);
+      }
+
+      .space-object{
+        opacity:.58;
+      }
+    }
+
+    @media (max-width: 768px){
+      .card{
+        min-width:min(82vw, 320px);
+        max-width:min(82vw, 340px);
+        padding:16px 16px 14px;
+      }
+
+      .hero{
+        min-width:min(90vw, 340px);
+        padding:20px 16px 16px;
+      }
+
+      .avatar{
+        width:84px;
+        height:84px;
+        margin-bottom:14px;
+      }
+
+      .hero p{
+        font-size:.92rem;
+      }
+
+      .card span{
+        font-size:.84rem;
+      }
+
+      .hud{
+        left:10px;
+        right:10px;
+        width:auto;
+      }
+
+      .hud-list{
+        grid-template-columns:1fr 1fr;
+        max-height: 28vh;
+      }
+
+      .hint{
+        bottom:10px;
+        font-size:.72rem;
+      }
+
+      .node:hover .card,
+      .node:focus-within .card{
+        transform:scale(1.02);
+      }
+    }
+
+    @media (max-width: 640px){
+      .hero{ min-width:min(92vw, 320px); padding:20px 16px 16px; }
+      .card{ min-width:min(88vw, 300px); max-width:min(88vw, 320px); padding:16px 14px 14px; }
+      .hint{ bottom:12px; font-size:.72rem; }
+      .hud{
+        width:auto;
+        left:10px;
+        right:10px;
+        top:auto;
+        bottom:10px;
+        padding:10px;
+        max-height: 40vh;
+      }
+      .hud-list{
+        grid-template-columns:1fr;
+        max-height: 24vh;
+      }
+    }
+
+    @media (pointer:coarse){
+      .node{
+        cursor:default;
+      }
+
+      .card{
+        box-shadow:0 0 12px rgba(255,255,255,.12);
+      }
     }
 
     @media (prefers-reduced-motion: reduce){
@@ -619,6 +747,7 @@
       const nodes = [...document.querySelectorAll('.node')];
       const linkItems = [...document.querySelectorAll('.link-item')];
       const hudList = document.getElementById('hudList');
+      const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
 
       let cameraX = 0;
       let cameraY = 0;
@@ -672,10 +801,11 @@
       function getLayoutBounds() {
         const w = window.innerWidth || 1280;
         const h = window.innerHeight || 720;
+        const mobile = w <= 768;
         return {
-          halfW: Math.max(2600, Math.round(w * 3.4)),
-          halfH: Math.max(2200, Math.round(h * 3.0)),
-          centerSafe: Math.max(720, Math.round(Math.min(w, h) * 0.85))
+          halfW: Math.max(mobile ? 1800 : 2600, Math.round(w * (mobile ? 2.6 : 3.4))),
+          halfH: Math.max(mobile ? 1500 : 2200, Math.round(h * (mobile ? 2.2 : 3.0))),
+          centerSafe: Math.max(mobile ? 520 : 720, Math.round(Math.min(w, h) * (mobile ? 0.95 : 0.85)))
         };
       }
 
@@ -694,7 +824,10 @@
           return { w: rect.width, h: rect.height };
         }
         const isHero = node.dataset.nodeId === 'hero';
-        return isHero ? { w: 360, h: 320 } : { w: 280, h: 170 };
+        if (isHero) {
+          return window.innerWidth <= 768 ? { w: 320, h: 300 } : { w: 360, h: 320 };
+        }
+        return window.innerWidth <= 768 ? { w: 300, h: 180 } : { w: 280, h: 170 };
       }
 
       function overlaps(a, b, buffer = 0) {
@@ -1009,8 +1142,8 @@
             y: Number(node.dataset.y || 0)
           }));
 
-        const minDistance = 380;
-        const maxObjects = 8;
+        const minDistance = window.innerWidth <= 768 ? 520 : 380;
+        const maxObjects = window.innerWidth <= 768 ? 4 : 8;
         const shapes = ['ring', 'ship', 'spark'];
         const bounds = [
           { x: -1600, y: -1200 },
